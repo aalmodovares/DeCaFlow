@@ -63,7 +63,7 @@ def test_get_ate_error_zero(simple_flow, simple_scm):
                           value_intervene_a=a,
                           value_intervene_b=b,
                           index_eval=5,
-                          num_samples=100000)
+                          num_samples=1000000)
     assert torch.isclose(error, torch.tensor(0.0), atol=1e-2),\
         f"Expected near-zero ATE error, got {error.item():.4f}"
 
