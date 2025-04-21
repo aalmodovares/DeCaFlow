@@ -1,0 +1,8 @@
+zuko
+causalflows
+torch == 2.5.1
+lightning == 2.5.1
+pandas
+seaborn
+pytest
+jupyter
