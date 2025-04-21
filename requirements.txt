@@ -6,3 +6,4 @@ pandas
 seaborn
 pytest
 jupyter
+cdt
