@@ -9,7 +9,8 @@ proposed in the paper [DeCaFlow: A Deconfounding Causal Generative Model](https:
 
 ## Installation
 This repository has been created on April 2025.
-At this point, the project need to be installed with the last version of the two main libraries: ``zuko>1.4.0`` and ``causalflows>0.1.0``.
+At this point, the project need to be installed with the last version of the two main libraries: ``zuko>1.4.0`` and ``causalflows==0.1.0``.
+Attention: the last version of causalflows only works with Python 3.11 at this point.
 
 Therefore, first install the last version of zuko using the following command:
 ```bash
