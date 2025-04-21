@@ -57,16 +57,19 @@ decaflow = DeCaFlow(encoder=encoder, flow=decoder,
 
 To train the model, employ a lightning trainer:
 ```python
-from pytorch_lightning import Trainer
+import lightning as L
 from decaflow.utils.logger import MyLogger
 logger= MyLogger()
 trainer_unaware  = L.Trainer(max_epochs=500, logger=logger , enable_checkpointing=False, log_every_n_steps=len(train_loader)-1)
 trainer_unaware.fit(decaflow, train_loader)
 ```
 
-The DeCaFlow model employs an ELBO and a regularization term, that should be defined.
+The DeCaFlow model employs an ELBO and a dynamic regularization term that should be activated or not. The warm up regularization
+term defines `beta=kl` when `epoch<warmup` and `beta=1` when `epoch>warmup`. The ELBO is defined as:
 
 ```elbo = log_prob_x - beta * kl_z```
+
+where `log_prob_x` is the log-likelihood of the data and `kl_z` is the KL divergence between the prior and the posterior of the latent variables.
 
 It allows to keep the encoder Empty, which is equivalent to using a standard Causal Flow.
 
@@ -104,7 +107,7 @@ Finally, identifiability algorithms can be found in the `identifiability` module
 
 ## Examples
 
-Please, find usage examples of every module in the `notebooks` folder.
+Find usage examples of every module in the `notebooks` folder.
 
 There, you can find the whole training process and the results for two example graphs.
 - `napkin_example.ipynb`: Example with the Napkin graph with 2 confounders.
@@ -113,7 +116,27 @@ There, you can find the whole training process and the results for two example g
 You can also find how to plot a graph like those plotted in the paper, where identifiable and non-
 identifiable variables are highlighted in `draw_graphs.ipynb`.
 
-Finally, check how to check identifiability in `identifiability_example.ipynb`.
+Finally, find how to check identifiability in `identifiability_example.ipynb`.
+
+Algorithm 5 in the paper:
+
+```python
+from decaflow.utils.identifiability import (find_confounded_paths,
+                                            check_identifiable_query)
+# G is a nx.DiGraph
+non_confounded_set, confounded_dict, frontdoor_set  = find_confounded_paths(G, hidden_vars=hidden_vars, frontdoor=True)
+is_identifiable =  check_identifiable_query(G, ('T', 'Y'), confounded_dict, hidden_vars)
+```
+
+Algorithm 6 in the paper:
+
+```python
+from decaflow.utils.identifiability import (find_confounded_paths,
+                                            check_identifiable_query_on_all_descendants)
+# G is a nx.DiGraph
+non_confounded_set, confounded_dict, frontdoor_set  = find_confounded_paths(G, hidden_vars=hidden_vars, frontdoor=True)
+check_identifiable_query_on_all_descendants(G, 'T', confounded_dict, hidden_vars)
+```
 
 ## Cite as
 ```bibtex
