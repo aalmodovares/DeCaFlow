@@ -137,12 +137,10 @@ class DeCaFlow(L.LightningModule):
         else:
             loss = -log_prob_x.mean(dim=0)
         if getattr(self.trainer, "logger", None) is not None:
-            self.log('val_loss', loss.detach(), prog_bar=True)
-            self.log('log_prob', log_prob_x.mean(dim=0).detach(), prog_bar=True)
+            self.log('val_loss', loss.detach(), on_step=False, on_epoch=True,  prog_bar=True)
+            self.log('val_log_prob', log_prob_x.mean(dim=0).detach(), on_step=False, on_epoch=True, prog_bar=False)
             if self.encoder is not None:
-                self.log('kl_z', kl_z.mean(dim=0).detach(), prog_bar=True)
-            if self.trainer.lr_scheduler_configs:
-                self.log('lr', self.lr_schedulers().get_last_lr()[-1], prog_bar=True)
+                self.log('val_kl_z', kl_z.mean(dim=0).detach(), on_step=False, on_epoch=True, prog_bar=False)
         return loss
 
     def sample(self, sample_shape: torch.Size) -> Tuple[torch.Tensor, torch.Tensor]:

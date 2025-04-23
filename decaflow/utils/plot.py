@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 import networkx as nx
 
 def create_df(tensors_dict):
@@ -34,9 +35,14 @@ def plot_data(tensors_dict, columns=None):
 def plot_logs(logger, columns):
     fig, axs = plt.subplots(1, len(columns), figsize=(4*len(columns), 4))
     for i, col in enumerate(columns):
-        sns.lineplot(x=logger.values['epoch'], y=logger.values[col], ax=axs[i])
+        if len(logger.values['epoch']) == len(logger.values[col]):
+            sns.lineplot(x=logger.values['epoch'], y=logger.values[col], ax=axs[i])
+            axs[i].set_xlabel('Epoch')
+        else:
+            sns.lineplot(x = np.arange(len(logger.values[col])), y=logger.values[col], ax=axs[i])
+            axs[i].set_xlabel('Step')
         axs[i].set_title(col)
-        axs[i].set_xlabel('Epoch')
+
         axs[i].set_ylabel(col)
         axs[i].grid(True)
     plt.show()
