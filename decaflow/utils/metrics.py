@@ -198,29 +198,34 @@ def get_counterfactual_error(flow, scm,
 
     # The factual of the models does not contain hiddens
     if hidden_indices is not None:
-        factual_model = factual[:, ~hidden_indices]
+        mask = torch.ones(factual.shape[1], dtype=torch.bool)
+        mask[hidden_indices] = False
+        factual_model = factual[:, mask]
     else:
         factual_model = factual[:, num_hidden:]
 
     # cf_model, _ = flow.compute_counterfactual(factual=factual_model, index=index_intervene_model, value=value_intervene)
     cf_model, _ = flow.compute_counterfactual(factual=factual_model, index=index_intervene_model[0], value=value_intervene[0])
     # cf_scm = scm.compute_counterfactual(factual=factual, index=index_intervene, value=value_intervene_scm)
-    cf_scm = scm.compute_counterfactual(factual=factual, index=index_intervene[0], value=value_intervene_scm[0])
+    factual_scm = factual*scm_scale + scm_loc
+    cf_scm = scm.compute_counterfactual(factual=factual_scm, index=index_intervene[0], value=value_intervene_scm[0])
 
     cf_scm = (cf_scm - scm_loc)/scm_scale
 
     # compare only the observational part of the the counterfactual of the scm
     if hidden_indices is not None:
-        cf_scm = cf_scm[:, ~hidden_indices]
+        mask = torch.ones(cf_scm.shape[1], dtype=torch.bool)
+        mask[hidden_indices] = False
+        cf_scm = cf_scm[:, mask]
     else:
         cf_scm = cf_scm[:, num_hidden:]
 
     if index_eval_model is not None:
-        cf_model = cf_model[index_eval_model]
-        cf_scm = cf_scm[index_eval_model]
+        cf_model = cf_model[:, index_eval_model]
+        cf_scm = cf_scm[:, index_eval_model]
     else:
-        cf_model = cf_model[index_intervene_model[-1]:]
-        cf_scm = cf_scm[index_intervene_model[-1]:]
+        cf_model = cf_model[:, index_intervene_model[-1]:]
+        cf_scm = cf_scm[:, index_intervene_model[-1]:]
     return torch.abs(cf_model - cf_scm).mean()
 
 def compute_kernel(x, y, kernel_type="rbf", sigma=None):
