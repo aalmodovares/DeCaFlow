@@ -112,6 +112,7 @@ Find usage examples of every module in the `notebooks` folder.
 There, you can find the whole training process and the results for two example graphs.
 - `napkin_example.ipynb`: Example with the Napkin graph with 2 confounders.
 - `sachs_example.ipynb`: Example with the Sachs graph with 2 confounders.
+- `ecoli_example.ipynb`: Example with the Ecoli graph with 46 variables and 3 confounders.
 
 You can also find how to plot a graph like those plotted in the paper, where identifiable and non-
 identifiable variables are highlighted in `draw_graphs.ipynb`.
