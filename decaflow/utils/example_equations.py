@@ -203,3 +203,187 @@ class NapkinEquations(CausalEquations):
         adj[5, :] = torch.tensor([1, 0, 0, 0, 1, 0])  # y
         adj += torch.eye(6)
         return adj.bool()
+
+
+class EcoliEquations(CausalEquations):
+    def __init__(self, equations_type: str = "additive"):
+        if equations_type == 'nonadditive':
+            raise NotImplementedError("Non-additive equations not implemented yet.")
+        super().__init__(*self._build(equations_type))
+
+    def _build(self, equations_type):
+        # === 1. Define graph ===
+        graph = nx.DiGraph([
+            ('b1191', 'fixC'), ('b1191', 'traA'), ('b1191', 'ygcE'),
+            ('eutG', 'yceP'), ('eutG', 'ibpB'), ('eutG', 'yfaD'), ('eutG', 'lacY'), ('eutG', 'sucA'),
+            ('fixC', 'ygbD'), ('fixC', 'yjbO'), ('fixC', 'cchB'), ('fixC', 'yceP'), ('fixC', 'traA'), ('fixC', 'ycgX'),
+            ('sucA', 'traA'), ('sucA', 'yfaD'), ('sucA', 'ygcE'), ('sucA', 'dnaJ'), ('sucA', 'flgD'), ('sucA', 'gltA'),
+            ('sucA', 'sucD'), ('sucA', 'yhdM'), ('sucA', 'atpG'), ('sucA', 'atpD'),
+            ('yceP', 'b1583'), ('yceP', 'ibpB'), ('yceP', 'yfaD'),
+            ('ygcE', 'icdA'), ('ygcE', 'asnA'), ('ygcE', 'atpD'),
+            ('asnA', 'icdA'), ('asnA', 'lacZ'), ('asnA', 'lacA'), ('asnA', 'lacY'),
+            ('cspG', 'lacA'), ('cspG', 'lacY'), ('cspG', 'yaeM'), ('cspG', 'cspA'), ('cspG', 'yeoC'), ('cspG', 'pspB'),
+            ('cspG', 'yedE'), ('cspG', 'pspA'),
+            ('atpD', 'yhel'),
+            ('icdA', 'aceB'),
+            ('lacA', 'b1583'), ('lacA', 'yaeM'), ('lacA', 'lacZ'), ('lacA', 'lacY'),
+            ('cspA', 'hupB'), ('cspA', 'yfiA'),
+            ('yedE', 'pspB'), ('yedE', 'pspA'), ('yedE', 'lpdA'), ('yedE', 'yhel'),
+            ('lacY', 'lacZ'), ('lacY', 'nuoM'),
+            ('yfiA', 'hupB'),
+            ('pspB', 'pspA'),
+            ('yhel', 'ycgX'), ('yhel', 'dnaG'), ('yhel', 'b1963'), ('yhel', 'folK'), ('yhel', 'dnaK'),
+            ('lacZ', 'b1583'), ('lacZ', 'yaeM'), ('lacZ', 'mopB'),
+            ('pspA', 'nmpC'),
+            ('ycgX', 'dnaG'),
+            ('dnaK', 'mopB'),
+            ('mopB', 'ftsJ')
+        ])
+
+        self.graph = graph
+
+        # === 2. Topological order with PKC, PKA first ===
+        nodes = [
+                    'b1191',
+                    'eutG',
+                    'cspG',   # unobserved confounder
+                    'fixC',
+                    'sucA',
+                    'ygbD',
+                    'yjbO',
+                    'cchB',
+                    'yceP',
+                    'traA',
+                    'ygcE',
+                    'dnaJ',
+                    'flgD',
+                    'gltA',
+                    'sucD',
+                    'yhdM',
+                    'atpG',
+                    'ibpB',
+                    'yfaD',
+                    'asnA',
+                    'atpD',
+                    'icdA',
+                    'lacA',
+                    'cspA',
+                    'yeoC',
+                    'yedE',
+                    'aceB',
+                    'lacY',
+                    'yfiA',
+                    'pspB',
+                    'lpdA',
+                    'yhel',
+                    'lacZ',
+                    'nuoM',
+                    'hupB',
+                    'pspA',
+                    'ycgX',
+                    'b1963',
+                    'folK',
+                    'dnaK',
+                    'b1583',
+                    'yaeM',
+                    'mopB',
+                    'nmpC',
+                    'dnaG',
+                    'ftsJ'
+                ]
+
+        self.node_order = nodes
+        # === 2. Generate weights ===
+        weights = {}
+        offset = int(equations_type == "nonadditive")
+
+        for node in nodes:
+            in_deg = graph.in_degree(node)
+            if in_deg > 0:
+                w1 = np.random.uniform(-1, 1, size=(16, in_deg + offset))
+                w2 = np.random.uniform(-1, 1, size=(1, 16))
+                parents = list(graph.predecessors(node))
+
+                for i, parent in enumerate(parents):
+                    if parent == "b1191" or parent=='eutG' or parent=='cspG':
+                        w1[:, i] = np.random.uniform(low=1, high=3, size=(16,))
+                        w2[:, i] = np.random.uniform(low=-2, high=2, size=(1,))
+
+                weights[node + "_1"] = w1
+                weights[node + "_2"] = w2
+
+        # === 3. Define helper functions ===
+        def make_fn_additive(w1, w2, parents):
+            w1 = torch.tensor(w1, dtype=torch.float32)
+            w2 = torch.tensor(w2, dtype=torch.float32)
+
+            def fn(*xs_and_u):
+                *xs, u = xs_and_u
+                full = torch.stack(xs, dim=0)[parents, :]
+                return (w2 @ silu(w1 @ full))[0, :] * 0.75 + u.reshape(-1)
+
+            return fn
+
+        def make_inverse_additive(w1, w2, parents):
+            w1 = torch.tensor(w1, dtype=torch.float32)
+            w2 = torch.tensor(w2, dtype=torch.float32)
+
+            def inv(*xs_and_y):
+                *xs, y = xs_and_y
+                x = torch.stack(xs, dim=0)[parents, :]
+                h_x = (w2 @ silu(w1 @ x))[0, :] * 0.75
+                return y - h_x  # shape: [batch_size]
+            return inv
+
+        def make_fn_nonadditive(w1, w2, parents):
+            w1 = torch.tensor(w1, dtype=torch.float32)
+            w2 = torch.tensor(w2, dtype=torch.float32)
+
+            def fn(*xs_and_u):
+                *xs, u = xs_and_u
+                full = torch.stack(xs, dim=0)[parents, :]
+                full = torch.cat([full, u.unsqueeze(0)], dim=0)  # add noise dim: [in_dim + 1, batch_size]
+                return (w2 @ silu(w1 @ full))[0, :] * 0.75
+            return fn
+
+        def make_inverse_nonadditive(w1_np, w2_np, parents):
+            ...
+
+
+        # === 4. Build structural functions ===
+        functions = []
+        inverses = []
+        for node in nodes:
+            parents = list(graph.predecessors(node))
+            if len(parents) == 0:
+                fn = lambda *xs_and_u: xs_and_u[-1]
+                inv = lambda *xs_and_x: xs_and_x[-1]
+            else:
+                w1 = weights[node + "_1"]
+                w2 = weights[node + "_2"]
+                parents_indices = [nodes.index(parent) for parent in parents]
+                fn = make_fn_nonadditive(w1, w2, parents_indices) \
+                    if equations_type == "nonadditive" else make_fn_additive(w1, w2, parents_indices)
+                inv = make_inverse_nonadditive(w1, w2, parents_indices) \
+                    if equations_type == "nonadditive" else make_inverse_additive(w1, w2, parents_indices)
+            functions.append(fn)
+            inverses.append(inv)
+
+        self._adjacency = self._build_adjacency(graph, nodes)
+        return functions, inverses
+
+    def _build_adjacency(self, graph, nodes):
+        n = len(nodes)
+        adj = torch.zeros((n, n))
+        node_to_idx = {node: i for i, node in enumerate(nodes)}
+        for child in nodes:
+            i = node_to_idx[child]
+            for parent in graph.predecessors(child):
+                j = node_to_idx[parent]
+                adj[i, j] = 1
+        adj += torch.eye(n)
+        return adj.bool()
+
+    @property
+    def adjacency(self):
+        return self._adjacency
