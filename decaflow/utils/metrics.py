@@ -1,6 +1,7 @@
 import torch
 from typing import Union, Sequence
-
+from itertools import combinations, product
+import pandas as pd
 
 def normalize(x):
     if isinstance(x, (int, float)):
@@ -308,4 +309,98 @@ def mmd_int(flow, scm,
         x = x[:, ~mask]
     x_flow, _ = flow.sample_interventional(index=index_intervene, value=value_intervene, sample_shape=(num_samples, ))
     return maximum_mean_discrepancy(x, x_flow)
+
+def get_ate_error_multiple_paths(flow, scm, num_hidden, quantiles, paths, train_data, hidden_indices=None,  scm_scale=1.0, scm_loc=0.0):
+    """
+    Define the paths to evaluate
+    :param flow:
+    :param scm:
+    :param quantiles: List of quantiles to evaluate, all combinations of ATE computed
+    :param paths: list of tuples with the indices of intervened and evaluated variables
+    :param hidden_indices: list with hidden indices
+    :param scm_scale: std of the scaler
+    :param scm_loc: loc of the scaler
+    :return: pd.DataFrame with the ATE errors of each path with each combination of quantiles
+    """
+
+    #combinations of quantiles
+    percentile_combinations = [(a, b) for a, b in combinations(quantiles, 2)]
+    # Generate column names
+    all_combinations = [((treatment, outcome), (p1, p2)) for (treatment, outcome), (p1, p2) in product(paths, percentile_combinations)]
+    columns = [
+        f"ate_({treatment},{outcome})_{int(100 * p1)}-{int(100 * p2)}"
+        for (treatment, outcome), (p1, p2) in all_combinations
+    ]
+    ate_errors = []
+    for comb in all_combinations:
+        (treatment, outcome), (p1, p2) = comb
+        # Compute the ATE error for each combination
+        value_intervene_a = train_data[:, treatment].quantile(p1)
+        value_intervene_b = train_data[:, treatment].quantile(p2)
+        ate_error = get_ate_error(
+            flow=flow,
+            scm=scm,
+            num_hidden=num_hidden,
+            index_intervene=treatment,
+            value_intervene_a=value_intervene_a,
+            value_intervene_b=value_intervene_b,
+            index_eval=outcome,
+            hidden_indices=hidden_indices,
+            num_samples=10000,
+            scm_scale=scm_scale,
+            scm_loc=scm_loc
+        )
+        ate_errors.append(float(ate_error))
+
+    return pd.DataFrame([ate_errors], columns = columns)
+
+
+def get_counterfactual_error_multiple_paths(flow, scm,
+                                            quantiles,
+                                            paths,
+                                            num_hidden,
+                                            factual,
+                                            train_data,
+                                            hidden_indices=None,
+                                            scm_scale=1.0,
+                                            scm_loc=0.0):
+    """
+    Define the paths to evaluate
+    :param flow:
+    :param scm:
+    :param quantiles: List of quantiles to evaluate, all cf computed
+    :param paths: list of tuples with the indices of intervened and evaluated variables
+    :param hidden_indices: list with hidden indices
+    :param scm_scale: std of the scaler
+    :param scm_loc: loc of the scaler
+    :return: pd.DataFrame with the ATE errors of each path with each combination of quantiles
+    """
+
+    # Generate column names
+    all_combinations = [((treatment, outcome), p) for (treatment, outcome), p in product(paths, quantiles)]
+    columns = [
+        f"cf_({treatment},{outcome})_{int(100*p)}"
+        for (treatment, outcome), p in all_combinations
+    ]
+    cf_errors = []
+    for comb in all_combinations:
+        (treatment, outcome), p = comb
+        # Compute the ATE error for each combination
+        value_intervene = train_data[:, treatment].quantile(p)
+        cf_error = get_counterfactual_error(
+            flow=flow,
+            scm=scm,
+            num_hidden=num_hidden,
+            factual=factual,
+            index_intervene=treatment,
+            value_intervene=value_intervene,
+            index_eval=outcome,
+            hidden_indices=hidden_indices,
+            scm_scale=scm_scale,
+            scm_loc=scm_loc
+        )
+        cf_errors.append(float(cf_error))
+
+    return pd.DataFrame([cf_errors], columns=columns)
+
 
