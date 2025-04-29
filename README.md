@@ -5,6 +5,14 @@ Deconfounding Causal Flow
 This repository is the user-friendly implementation of DeCaFlow, the deconfounding causal generative model
 proposed in the paper [DeCaFlow: A Deconfounding Causal Generative Model](https://arxiv.org/abs/2503.15114).
 
+> [!IMPORTANT]
+> If you are interested in replicating the experiments reported in the paper
+> — including hyperparameter searches, baselines, ablations, and other implementation details —
+> please request access to the original research code. This version is more complex and was developed primarily for research purposes rather than ease of use.
+Contact [alejandro.almodovar@upm.es](mailto:alejandro.almodovar@upm.es)
+> or [ajavaloy@ed.ac.uk](mailto:ajavaloy@ed.ac.uk) to request access.
+
+For other issues related with the code or the paper, feel free to open an Issue in github or contact us.
 
 
 ## Installation
