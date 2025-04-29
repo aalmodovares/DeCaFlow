@@ -12,6 +12,11 @@ proposed in the paper [DeCaFlow: A Deconfounding Causal Generative Model](https:
 Contact [alejandro.almodovar@upm.es](mailto:alejandro.almodovar@upm.es)
 > or [ajavaloy@ed.ac.uk](mailto:ajavaloy@ed.ac.uk) to request access.
 
+
+> [!warning]
+> This repository is still under development and may contain bugs. We are still working in including more examples,
+> test, experiments and documents to the repository.
+
 For other issues related with the code or the paper, feel free to open an Issue in github or contact us.
 
 
