@@ -1,9 +1,8 @@
-zuko
 causalflows
-torch == 2.5.1
-lightning == 2.5.1
+lightning
 pandas
 seaborn
 pytest
 jupyter
 cdt
+networkx==3.4.2
