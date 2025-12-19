@@ -277,7 +277,7 @@ def mmd_obs(flow, scm,
         mask = torch.zeros(x.shape[1], dtype=torch.bool)
         mask[hidden_indices] = True
         x = x[:, ~mask]
-    x_flow, _ = flow.sample(num_samples=num_samples)
+    x_flow, _ = flow.sample((num_samples,))
     return maximum_mean_discrepancy(x, x_flow)
 
 def mmd_int(flow, scm,

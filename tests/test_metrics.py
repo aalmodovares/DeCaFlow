@@ -51,7 +51,7 @@ def simple_flow(simple_scm):
         def compute_counterfactual(self, factual, index, value):
             return simple_scm.compute_counterfactual(factual=factual, index=index, value=value), None
         def sample(self, num_samples):
-            return simple_scm.sample((num_samples,)), None
+            return simple_scm.sample(num_samples), None
     return IdentityFlow()
 
 def test_get_ate_error_zero(simple_flow, simple_scm):
