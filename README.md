@@ -149,9 +149,10 @@ check_identifiable_query_on_all_descendants(G, 'T', confounded_dict, hidden_vars
 
 ## Cite as
 ```bibtex
-@article{almodovar2025decaflow,
-  title={DeCaFlow: A Deconfounding Causal Generative Model},
-  author={Almod{\'o}var, Alejandro and Javaloy, Adri{\'a}n and Parras, Juan and Zazo, Santiago and Valera, Isabel},
-  journal={arXiv preprint arXiv:2503.15114},
-  year={2025}
+@inproceedings{almodovar2025decaflow,
+  title={DeCaFlow: A deconfounding causal generative model},
+  author={Alejandro Almod{\'o}var and Adri{\'a}n Javaloy and Juan Parras and Santiago Zazo and Isabel Valera},
+  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},
+  year={2025},
+  url={https://openreview.net/forum?id=mOYGK7Hw9Y}
 }
